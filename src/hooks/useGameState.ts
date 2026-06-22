@@ -58,6 +58,19 @@ function computeBaseCps(upgradeCounts: Record<string, number>): number {
 
 const SAVE_KEY = 'cookie_clicker_save_v1';
 
+const EMPTY_STATE: GameState = {
+  cookies: 0,
+  upgradeCounts: {},
+  multiplier: 1,
+  permanentCpsBonus: 0,
+  permanentMultiplierBoost: 0,
+  cpsBoostMultiplier: 1,
+  activeEvent: null,
+  eventFeed: [],
+  comboCount: 0,
+  clickValue: 1,
+};
+
 function loadSave(): Partial<GameState> {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
@@ -94,6 +107,17 @@ export function useGameState() {
   const chaosIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const autoClickStormRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const autoClickArmyRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const stopTimedEvents = useCallback(() => {
+    if (chaosIntervalRef.current) clearInterval(chaosIntervalRef.current);
+    if (autoClickStormRef.current) clearInterval(autoClickStormRef.current);
+    if (autoClickArmyRef.current) clearInterval(autoClickArmyRef.current);
+    if (comboTimerRef.current) clearTimeout(comboTimerRef.current);
+    chaosIntervalRef.current = null;
+    autoClickStormRef.current = null;
+    autoClickArmyRef.current = null;
+    comboTimerRef.current = null;
+  }, []);
 
   const displayCps = useMemo(() => {
     const base = computeBaseCps(state.upgradeCounts);
@@ -219,7 +243,7 @@ export function useGameState() {
     return () => clearInterval(id);
   }, []);
 
-  const triggerEvent = useCallback((type: string) => {
+  const triggerEvent = useCallback((type: string, actor = "Viewer") => {
     switch (type) {
       case 'CHAT':
         handleClick();
@@ -240,7 +264,7 @@ export function useGameState() {
         break;
 
       case 'SUBSCRIBER':
-        addEventToFeed('New Subscriber', 'LOW', '+100 cookies and 1.5x mult for 90s');
+        addEventToFeed('New Subscriber', 'LOW', `${actor}: +100 cookies and 1.5x mult for 90s`);
         addCookies(100);
         setState(prev => ({
           ...prev,
@@ -282,7 +306,7 @@ export function useGameState() {
         break;
 
       case 'MEMBERSHIP':
-        addEventToFeed('Channel Member', 'MID', 'Permanent +10% CPS');
+        addEventToFeed('Channel Member', 'MID', `${actor}: permanent +10% CPS`);
         setState(prev => ({
           ...prev,
           permanentCpsBonus: Math.min(0.5, prev.permanentCpsBonus + 0.1),
@@ -298,18 +322,25 @@ export function useGameState() {
         break;
 
       case 'WORLD_RESET':
-        addEventToFeed('World Reset', 'HIGH', '+1x mult permanent, CPS tripled');
-        setState(prev => ({
-          ...prev,
-          cookies: 0,
-          cpsBoostMultiplier: prev.cpsBoostMultiplier * 3,
-          permanentMultiplierBoost: prev.permanentMultiplierBoost + 1,
+        stopTimedEvents();
+        try {
+          localStorage.removeItem(SAVE_KEY);
+        } catch { /* ignore */ }
+        setState({
+          ...EMPTY_STATE,
+          eventFeed: [{
+            id: Math.random().toString(36).substring(2, 9),
+            name: 'World Reset',
+            tier: 'HIGH',
+            timestamp: Date.now(),
+            message: 'Everything reset to zero',
+          }],
           activeEvent: { id: 'reset', name: 'A NEW WORLD BEGINS', endTime: Date.now() + 2000, type: 'RESET', metadata: {} },
-        }));
+        });
         break;
 
       case 'ARMY':
-        addEventToFeed('Auto-Click Army', 'HIGH', '12 cursors for 30s');
+        addEventToFeed('Gifted Members', 'HIGH', `${actor}: 12 cursors for 30s`);
         setState(prev => ({
           ...prev,
           activeEvent: { id: 'army', name: 'AUTO-CLICK ARMY', endTime: Date.now() + 30000, type: 'ARMY', metadata: {} },
@@ -326,7 +357,7 @@ export function useGameState() {
         }, 30000);
         break;
     }
-  }, [addCookies, handleClick, addEventToFeed]);
+  }, [addCookies, handleClick, addEventToFeed, stopTimedEvents]);
 
   return { state, handleClick, triggerEvent, buyUpgrade, displayCps };
 }
