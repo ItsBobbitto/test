@@ -2,14 +2,8 @@
   StreamElements reward overlay bridge
 
   Paste this into a StreamElements custom widget JS panel.
-  Set API_ENDPOINT to your deployed backend/proxy endpoint.
-
-  Expected API:
-    POST https://your-domain.com/api/stream/event
-    body: { type, username, amount, source }
+  This version does not require an external API endpoint.
 */
-
-const API_ENDPOINT = "https://chlimro.applesmp.us/api/stream/event";
 
 const REWARD_COPY = {
   SUBSCRIBER: "Sub Hype: +100 cookies and 1.5x for 90s",
@@ -38,18 +32,6 @@ function mapSuperChatAmount(amount) {
   if (amount >= 5) return "GOLDEN_RAIN";
   if (amount >= 2) return "CLICK_FRENZY";
   return "COOKIE_RAIN";
-}
-
-async function sendReward(payload) {
-  try {
-    await fetch(API_ENDPOINT, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-  } catch (error) {
-    console.error("[ChatSparks] Failed to send reward", error);
-  }
 }
 
 function showRewardAlert({ username, amount, eventType }) {
@@ -157,7 +139,6 @@ window.addEventListener("onEventReceived", (obj) => {
   const username = getName(event);
   const amount = Number(event.amount || event.amountFormatted || event.value || 0);
 
-  let payload = null;
   let visibleEventType = null;
 
   if (
@@ -166,11 +147,6 @@ window.addEventListener("onEventReceived", (obj) => {
     listener.includes("member") ||
     listener.includes("follow")
   ) {
-    payload = {
-      type: "subscriber",
-      username,
-      source: "streamelements",
-    };
     visibleEventType = "SUBSCRIBER";
   }
 
@@ -181,17 +157,10 @@ window.addEventListener("onEventReceived", (obj) => {
     listener.includes("donation")
   ) {
     visibleEventType = mapSuperChatAmount(amount);
-    payload = {
-      type: "super_chat",
-      username,
-      amount,
-      source: "streamelements",
-    };
   }
 
-  if (!payload) return;
+  if (!visibleEventType) return;
 
-  sendReward(payload);
   showRewardAlert({
     username,
     amount,
