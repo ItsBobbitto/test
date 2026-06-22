@@ -39,32 +39,10 @@ export function GamePage() {
   const { state, handleClick, triggerEvent, buyUpgrade, displayCps } = useGameState();
   const [clicks, setClicks] = useState<{ id: string; x: number; y: number; val: number }[]>([]);
   const [rainItems, setRainItems] = useState<{ id: string; left: number; delay: number }[]>([]);
-  const [webhookConnected, setWebhookConnected] = useState(false);
   const [panelTab, setPanelTab] = useState<'closed' | 'gifts' | 'upgrades'>('closed');
   const [lastBought, setLastBought] = useState<string | null>(null);
   const [hypeEvent, setHypeEvent] = useState<{ username: string; amount?: number; eventType: string } | null>(null);
-
-  useEffect(() => {
-    let es: EventSource | null = null;
-    try {
-      es = new EventSource(window.location.origin + '/api/stream/events');
-      es.onopen = () => setWebhookConnected(true);
-      es.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          if (data?.type && data.type !== 'CONNECTED') {
-            triggerEvent(data.type);
-            if (data.type !== 'CHAT' && data.username && data.username !== 'Anonymous') {
-              setHypeEvent({ username: data.username, amount: data.amount, eventType: data.type });
-              setTimeout(() => setHypeEvent(null), 5000);
-            }
-          }
-        } catch { /* ignore */ }
-      };
-      es.onerror = () => setWebhookConnected(false);
-    } catch { setWebhookConnected(false); }
-    return () => es?.close();
-  }, [triggerEvent]);
+  const [simName, setSimName] = useState("Viewer");
 
   const handleCookieClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -138,9 +116,9 @@ export function GamePage() {
             <div>
               <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold flex items-center gap-1.5 mb-0.5">
                 COOKIES
-                <span className={`inline-flex items-center gap-0.5 text-[9px] ${webhookConnected ? 'text-green-400' : 'text-zinc-500'}`}>
-                  <span className={`w-1.5 h-1.5 rounded-full ${webhookConnected ? 'bg-green-500 shadow-[0_0_4px_#22c55e]' : 'bg-zinc-600'}`} />
-                  {webhookConnected ? 'LIVE' : 'OFFLINE'}
+                <span className="inline-flex items-center gap-0.5 text-[9px] text-green-400">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_4px_#22c55e]" />
+                  SIM READY
                 </span>
               </div>
               <div className="font-display text-4xl text-primary drop-shadow leading-none">
@@ -178,7 +156,7 @@ export function GamePage() {
         </div>
 
         {/* COOKIE ZONE */}
-        <div className="flex-1 relative flex flex-col items-center justify-center overflow-hidden min-h-0">
+        <div className="h-[360px] relative flex flex-col items-center justify-center overflow-hidden shrink-0">
           {rainItems.map(item => (
             <div
               key={item.id}
@@ -269,22 +247,23 @@ export function GamePage() {
             ))}
           </div>
 
-          <div className="relative">
+          <div className="relative mr-[104px]">
             <motion.div
               whileHover={{ scale: 1.04 }}
               whileTap={{ scale: 0.93 }}
               onClick={handleCookieClick}
               data-testid="cookie-button"
-              className="cursor-pointer rounded-full relative z-20 select-none w-[240px] h-[240px] border-4 border-orange-900 shadow-[0_0_40px_rgba(217,119,6,0.4)] bg-[#945100] border-t-[color:var(--color-border)] border-r-[color:var(--color-border)] border-b-[color:var(--color-border)] border-l-[color:var(--color-border)]"
+              className="cursor-pointer rounded-full relative z-20 select-none w-[190px] h-[190px] border-[6px] border-[#5a2f12] shadow-[inset_-18px_-22px_0_rgba(83,39,13,0.26),inset_16px_18px_0_rgba(255,218,146,0.16),0_0_42px_rgba(217,119,6,0.28)] bg-[radial-gradient(circle_at_34%_28%,#f4c16d_0%,#c5792c_42%,#8f4f1d_100%)]"
             >
-              <div className="absolute inset-0 rounded-full pointer-events-none opacity-40 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.3),transparent)]" />
+              <div className="absolute inset-0 rounded-full pointer-events-none opacity-55 bg-[radial-gradient(circle_at_30%_26%,rgba(255,255,255,0.35),transparent_32%)]" />
               {!isBoss && (
                 <>
-                  <div className="absolute top-10 left-14 w-5 h-5 rounded-full bg-black/20 pointer-events-none" />
-                  <div className="absolute top-[84px] right-12 w-7 h-7 rounded-full bg-black/20 pointer-events-none" />
-                  <div className="absolute bottom-14 left-[72px] w-6 h-6 rounded-full bg-black/20 pointer-events-none" />
-                  <div className="absolute bottom-12 right-16 w-4 h-4 rounded-full bg-black/20 pointer-events-none" />
-                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-black/20 pointer-events-none" />
+                  <div className="absolute top-9 left-12 w-6 h-6 rounded-full bg-[#3b1f12] shadow-[inset_3px_3px_0_rgba(255,255,255,0.08)] pointer-events-none" />
+                  <div className="absolute top-[72px] right-11 w-8 h-8 rounded-full bg-[#2f180e] shadow-[inset_3px_3px_0_rgba(255,255,255,0.08)] pointer-events-none" />
+                  <div className="absolute bottom-12 left-[58px] w-7 h-7 rounded-full bg-[#351b10] shadow-[inset_3px_3px_0_rgba(255,255,255,0.08)] pointer-events-none" />
+                  <div className="absolute bottom-10 right-14 w-5 h-5 rounded-full bg-[#2f180e] shadow-[inset_3px_3px_0_rgba(255,255,255,0.08)] pointer-events-none" />
+                  <div className="absolute top-[98px] left-[88px] w-5 h-5 rounded-full bg-[#3b1f12] shadow-[inset_3px_3px_0_rgba(255,255,255,0.08)] pointer-events-none" />
+                  <div className="absolute top-14 left-[92px] w-4 h-4 rounded-full bg-[#2b160c] shadow-[inset_2px_2px_0_rgba(255,255,255,0.08)] pointer-events-none" />
                 </>
               )}
             </motion.div>
@@ -583,6 +562,16 @@ export function GamePage() {
                   className="overflow-hidden"
                 >
                   <div className="p-3 space-y-2">
+                    <label className="block">
+                      <span className="text-[9px] text-muted-foreground uppercase tracking-widest font-bold">Viewer name</span>
+                      <input
+                        value={simName}
+                        onChange={(event) => setSimName(event.target.value)}
+                        className="mt-1 w-full rounded bg-black/50 border border-white/10 px-2 py-1.5 text-xs text-white outline-none focus:border-red-400"
+                        placeholder="Viewer"
+                      />
+                    </label>
+
                     {/* Chat spam */}
                     <div className="flex items-center gap-2">
                       <button
@@ -615,19 +604,34 @@ export function GamePage() {
                     {/* Membership / gift subs */}
                     <div className="grid grid-cols-3 gap-2">
                       <button
-                        onClick={() => triggerEvent('SUBSCRIBER')}
+                        onClick={() => {
+                          const username = simName.trim() || 'Viewer';
+                          triggerEvent('SUBSCRIBER', username);
+                          setHypeEvent({ username, eventType: 'SUBSCRIBER' });
+                          setTimeout(() => setHypeEvent(null), 5000);
+                        }}
                         className="py-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/40 text-[10px] font-bold rounded transition-colors"
                       >
                         Subscriber
                       </button>
                       <button
-                        onClick={() => triggerEvent('MEMBERSHIP')}
+                        onClick={() => {
+                          const username = simName.trim() || 'Viewer';
+                          triggerEvent('MEMBERSHIP', username);
+                          setHypeEvent({ username, eventType: 'MEMBERSHIP' });
+                          setTimeout(() => setHypeEvent(null), 5000);
+                        }}
                         className="py-1.5 bg-green-500/20 hover:bg-green-500/30 text-green-400 border border-green-500/40 text-[10px] font-bold rounded transition-colors"
                       >
                         Channel Member
                       </button>
                       <button
-                        onClick={() => triggerEvent('ARMY')}
+                        onClick={() => {
+                          const username = simName.trim() || 'Viewer';
+                          triggerEvent('ARMY', username);
+                          setHypeEvent({ username, eventType: 'ARMY' });
+                          setTimeout(() => setHypeEvent(null), 5000);
+                        }}
                         className="py-1.5 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/40 text-[10px] font-bold rounded transition-colors"
                       >
                         Gifted Members
@@ -651,16 +655,6 @@ export function GamePage() {
                       ))}
                     </div>
 
-                    {/* Webhook URL hint */}
-                    <div className="rounded-lg bg-black/40 border border-border/50 px-2.5 py-2">
-                      <div className="text-[9px] text-muted-foreground uppercase tracking-widest mb-1">External Webhook</div>
-                      <div className="font-mono text-[9px] text-green-400 break-all select-all">
-                        POST {window.location.origin}/api/stream/event
-                      </div>
-                      <div className="font-mono text-[9px] text-zinc-500 mt-1">
-                        {`{ "type": "jewels", "amount": 200 }`}
-                      </div>
-                    </div>
                   </div>
                 </motion.div>
               )}
