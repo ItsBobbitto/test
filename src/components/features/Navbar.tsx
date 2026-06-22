@@ -1,9 +1,8 @@
 import { Link, useLocation } from "wouter";
-import { Activity, Gamepad2, Radio } from "lucide-react";
+import { Gamepad2, Radio } from "lucide-react";
 
 const navItems = [
   { href: "/", label: "Game", icon: Gamepad2 },
-  { href: "/control", label: "Control", icon: Activity },
 ];
 
 export default function Navbar() {
