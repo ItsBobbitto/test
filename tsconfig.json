@@ -1,0 +1,33 @@
+{
+  "extends": "./tsconfig.base.json",
+  "include": [
+    "src/App.tsx",
+    "src/main.tsx",
+    "src/index.css",
+    "src/components/features/**/*",
+    "src/components/ui/progress.tsx",
+    "src/hooks/**/*",
+    "src/lib/**/*",
+    "src/pages/Game.tsx",
+    "src/pages/Control.tsx",
+    "src/pages/not-found.tsx",
+    "src/pages/game/**/*",
+    "src/pages/control/**/*",
+    "src/pages/not-found/**/*"
+  ],
+  "exclude": ["node_modules", "build", "dist", "**/*.test.ts"],
+  "compilerOptions": {
+    "incremental": true,
+    "tsBuildInfoFile": ".tsbuildinfo",
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "lib": ["esnext", "dom", "dom.iterable"],
+    "resolveJsonModule": true,
+    "allowImportingTsExtensions": true,
+    "moduleResolution": "bundler",
+    "types": ["node", "vite/client"],
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  }
+}

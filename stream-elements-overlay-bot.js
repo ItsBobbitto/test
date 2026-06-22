@@ -1,0 +1,200 @@
+/*
+  StreamElements reward overlay bridge
+
+  Paste this into a StreamElements custom widget JS panel.
+  Set API_ENDPOINT to your deployed backend/proxy endpoint.
+
+  Expected API:
+    POST https://your-domain.com/api/stream/event
+    body: { type, username, amount, source }
+*/
+
+const API_ENDPOINT = "https://YOUR-DOMAIN-HERE.com/api/stream/event";
+
+const REWARD_COPY = {
+  SUBSCRIBER: "Sub Hype: +100 cookies and 1.5x for 90s",
+  CLICK_FRENZY: "Super Chat Reward: 2x Frenzy for 5 min",
+  GOLDEN_RAIN: "Super Chat Reward: Auto-click Storm for 10 min",
+  CHAOS_MODE: "Super Chat Reward: Chaos Mode for 5 min",
+  BOSS: "Super Chat Reward: Boss Cookie spawned",
+  WORLD_RESET: "Super Chat Reward: World Reset triggered",
+};
+
+function getName(event) {
+  return (
+    event?.displayName ||
+    event?.name ||
+    event?.username ||
+    event?.nick ||
+    event?.sender ||
+    "Someone"
+  );
+}
+
+function mapSuperChatAmount(amount) {
+  if (amount >= 50) return "WORLD_RESET";
+  if (amount >= 20) return "BOSS";
+  if (amount >= 10) return "CHAOS_MODE";
+  if (amount >= 5) return "GOLDEN_RAIN";
+  if (amount >= 2) return "CLICK_FRENZY";
+  return "COOKIE_RAIN";
+}
+
+async function sendReward(payload) {
+  try {
+    await fetch(API_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+  } catch (error) {
+    console.error("[ChatSparks] Failed to send reward", error);
+  }
+}
+
+function showRewardAlert({ username, amount, eventType }) {
+  const wrap = document.createElement("div");
+  wrap.className = "stream-reward-alert";
+
+  const title =
+    eventType === "SUBSCRIBER"
+      ? `${username} subscribed`
+      : `${username} sent ${amount ? `$${amount}` : "a reward"}`;
+
+  wrap.innerHTML = `
+    <div class="stream-reward-icon">⚡</div>
+    <div class="stream-reward-copy">
+      <strong>${title}</strong>
+      <span>${REWARD_COPY[eventType] || "Chat reward triggered"}</span>
+    </div>
+  `;
+
+  document.body.appendChild(wrap);
+  requestAnimationFrame(() => wrap.classList.add("show"));
+
+  setTimeout(() => {
+    wrap.classList.remove("show");
+    setTimeout(() => wrap.remove(), 450);
+  }, 5200);
+}
+
+function injectRewardStyles() {
+  if (document.getElementById("stream-reward-styles")) return;
+  const style = document.createElement("style");
+  style.id = "stream-reward-styles";
+  style.textContent = `
+    .stream-reward-alert {
+      position: fixed;
+      left: 50%;
+      top: 7%;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      min-width: 420px;
+      max-width: min(680px, calc(100vw - 48px));
+      padding: 18px 22px;
+      border: 1px solid rgba(255,255,255,.16);
+      border-radius: 22px;
+      background:
+        radial-gradient(circle at 18% 50%, rgba(255, 70, 70, .32), transparent 11rem),
+        linear-gradient(135deg, rgba(18,18,18,.94), rgba(6,6,6,.86));
+      box-shadow: 0 26px 80px rgba(0,0,0,.48), 0 0 44px rgba(255, 55, 55, .20);
+      color: white;
+      font-family: Inter, Arial, sans-serif;
+      opacity: 0;
+      transform: translate(-50%, -18px) scale(.96);
+      transition: opacity .35s ease, transform .35s ease;
+      z-index: 999999;
+    }
+
+    .stream-reward-alert.show {
+      opacity: 1;
+      transform: translate(-50%, 0) scale(1);
+    }
+
+    .stream-reward-icon {
+      display: grid;
+      place-items: center;
+      width: 58px;
+      height: 58px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, #ff3f45, #951b22);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.3), 0 14px 30px rgba(239,68,68,.24);
+      font-size: 32px;
+    }
+
+    .stream-reward-copy {
+      display: grid;
+      gap: 5px;
+    }
+
+    .stream-reward-copy strong {
+      font-size: 26px;
+      line-height: 1;
+      letter-spacing: 0;
+      text-shadow: 0 3px 16px rgba(0,0,0,.42);
+    }
+
+    .stream-reward-copy span {
+      color: rgba(255,255,255,.72);
+      font-size: 15px;
+      font-weight: 800;
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+window.addEventListener("onWidgetLoad", () => {
+  injectRewardStyles();
+});
+
+window.addEventListener("onEventReceived", (obj) => {
+  injectRewardStyles();
+
+  const detail = obj?.detail || {};
+  const listener = String(detail.listener || "").toLowerCase();
+  const event = detail.event || {};
+  const username = getName(event);
+  const amount = Number(event.amount || event.amountFormatted || event.value || 0);
+
+  let payload = null;
+  let visibleEventType = null;
+
+  if (
+    listener.includes("subscriber") ||
+    listener.includes("subscription") ||
+    listener.includes("member") ||
+    listener.includes("follow")
+  ) {
+    payload = {
+      type: "subscriber",
+      username,
+      source: "streamelements",
+    };
+    visibleEventType = "SUBSCRIBER";
+  }
+
+  if (
+    listener.includes("superchat") ||
+    listener.includes("super_chat") ||
+    listener.includes("tip") ||
+    listener.includes("donation")
+  ) {
+    visibleEventType = mapSuperChatAmount(amount);
+    payload = {
+      type: "super_chat",
+      username,
+      amount,
+      source: "streamelements",
+    };
+  }
+
+  if (!payload) return;
+
+  sendReward(payload);
+  showRewardAlert({
+    username,
+    amount,
+    eventType: visibleEventType,
+  });
+});
