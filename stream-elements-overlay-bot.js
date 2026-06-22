@@ -9,7 +9,7 @@
     body: { type, username, amount, source }
 */
 
-const API_ENDPOINT = "https://YOUR-DOMAIN-HERE.com/api/stream/event";
+const API_ENDPOINT = "https://chlimro.applesmp.us/api/stream/event";
 
 const REWARD_COPY = {
   SUBSCRIBER: "Sub Hype: +100 cookies and 1.5x for 90s",
