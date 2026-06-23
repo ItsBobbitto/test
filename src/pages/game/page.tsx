@@ -110,11 +110,19 @@ export function GamePage() {
   const effectiveMult = state.multiplier + state.permanentMultiplierBoost;
   const membershipStacks = Math.round(state.permanentCpsBonus / 0.1);
   const unlockProgress = Math.min(100, (state.totalClicks / 1000) * 100);
+  const milkProgress = Math.min(50, (state.totalClicks / 1000) * 50);
+  const isChocolateMilk = isFrenzy || isChaos;
   const upgradeDefs = state.upgrades ?? UPGRADES;
 
   return (
     <div className={`h-[100dvh] w-full flex justify-center bg-black ${isChaos ? 'animate-chaos' : ''}`}>
-      <div className="live-frame flex flex-col relative bg-background shadow-2xl overflow-hidden">
+      <div
+        className={`live-frame flex flex-col relative bg-background shadow-2xl overflow-hidden ${isChocolateMilk ? 'chocolate-milk' : ''}`}
+        style={{ '--milk-level': `${milkProgress}%` } as CSSProperties}
+      >
+        <div className="page-milk-bg" aria-hidden="true">
+          <div className="page-milk-wave" />
+        </div>
 
         {/* WORLD RESET OVERLAY */}
         <AnimatePresence>
@@ -262,9 +270,6 @@ export function GamePage() {
             </div>
 
           <div className="cookie-stage relative">
-            <div className="milk-wave" aria-hidden="true">
-              <div className="milk-wave-layer" />
-            </div>
             <div className="attention-particles" aria-hidden="true">
               {Array.from({ length: 18 }).map((_, i) => (
                 <span key={i} style={{ '--i': i } as CSSProperties} />
