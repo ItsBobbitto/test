@@ -1,61 +1,121 @@
-# Connect YouTube Without Google Cloud
+# Chat Event Sparks Global API
 
-Use StreamElements as the YouTube event bridge. This avoids Google Cloud, OAuth app setup, YouTube Data API keys, and quota management.
+This is the API that makes clicks global for every viewer.
 
-## What This Supports
+Your frontend is already at:
 
-- YouTube Super Chat
-- Super Sticker style donation events when StreamElements exposes them
-- Subscribers
-- Channel memberships
-- Gifted memberships
+```text
+https://chlimro.applesmp.us
+```
 
-## Setup
+This Worker must be routed to:
 
-1. Log in to StreamElements with the YouTube channel that will stream.
-2. Create or open an overlay in StreamElements.
-3. Add a Custom Widget.
-4. Paste the contents of `stream-elements-overlay-bot.js` into the widget JavaScript panel.
-5. Save the widget and add the overlay URL to OBS as a Browser Source.
-6. Run this app and the API server on a public HTTPS URL.
-7. In `stream-elements-overlay-bot.js`, set `GAME_EVENT_ENDPOINT` to your app's event endpoint:
+```text
+https://chlimro.applesmp.us/api/*
+```
+
+## Files To Add To GitHub
+
+Add this folder to your repo, for example:
+
+```text
+cloudflare-global-api/
+  package.json
+  wrangler.toml
+  src/index.ts
+  streamelements-widget.js
+```
+
+## Deploy Option A: Cloudflare Dashboard With GitHub
+
+1. Push `cloudflare-global-api/` to your GitHub repo.
+2. Open Cloudflare Dashboard.
+3. Go to **Workers & Pages**.
+4. Click **Create application**.
+5. Choose **Worker**.
+6. Connect your GitHub repo.
+7. Set the root directory to:
+
+```text
+cloudflare-global-api
+```
+
+8. Use these commands:
+
+```text
+Build command: npm install
+Deploy command: npm run deploy
+```
+
+If Cloudflare asks for the entry point, use:
+
+```text
+src/index.ts
+```
+
+## Deploy Option B: Wrangler From Your PC
+
+Inside `cloudflare-global-api/`, run:
+
+```bash
+npm install
+npx wrangler login
+npm run deploy
+```
+
+## Add The Route
+
+After the Worker is deployed:
+
+1. Open Cloudflare Dashboard.
+2. Go to **Workers & Pages**.
+3. Open the Worker named `chat-event-sparks-api`.
+4. Go to **Settings**.
+5. Go to **Triggers**.
+6. Add a route:
+
+```text
+chlimro.applesmp.us/api/*
+```
+
+7. Choose the zone:
+
+```text
+applesmp.us
+```
+
+## Test
+
+Open this in your browser:
+
+```text
+https://chlimro.applesmp.us/api/stream/status
+```
+
+It should show JSON like:
+
+```json
+{
+  "ok": true,
+  "state": {
+    "cookies": 0,
+    "totalClicks": 0
+  }
+}
+```
+
+If you still see the React "Page not found" page, the Worker route is not attached correctly.
+
+## StreamElements Bot Code
+
+Paste `streamelements-widget.js` into:
+
+```text
+StreamElements overlay -> Custom Widget -> JavaScript
+```
+
+The endpoint is already set:
 
 ```js
-const GAME_EVENT_ENDPOINT = "https://your-domain.com/api/stream/event";
+const GAME_EVENT_ENDPOINT = "https://chlimro.applesmp.us/api/stream/event";
 ```
-
-## How Events Reach The Game
-
-The game page opens a server-sent event stream at:
-
-```text
-/api/stream/events
-```
-
-The API server accepts StreamElements-style payloads at:
-
-```text
-POST /api/stream/event
-```
-
-The server maps the incoming event to a gameplay event, then broadcasts it to the open game page.
-
-## Reward Mapping
-
-```text
-$2+ Super Chat   -> CLICK_FRENZY
-$5+ Super Chat   -> GOLDEN_RAIN
-$10+ Super Chat  -> CHAOS_MODE
-$20+ Super Chat  -> BOSS
-$50+ Super Chat  -> WORLD_RESET
-Subscriber       -> SUBSCRIBER
-Channel member   -> MEMBERSHIP
-Gifted members   -> ARMY
-```
-
-## Important Notes
-
-- StreamElements must be connected to the YouTube channel. That connection is handled by StreamElements, not by this app.
-- If you only need on-screen overlay alerts, the widget script can run by itself.
-- If you want the cookie game to react, the widget or bridge must send events to `/api/stream/event`.
-- For local testing, use the in-game simulator or the control page endpoint before going live.
