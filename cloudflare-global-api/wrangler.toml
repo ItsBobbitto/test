@@ -1,0 +1,11 @@
+name = "chat-event-sparks-api"
+main = "src/index.ts"
+compatibility_date = "2026-06-23"
+
+[[durable_objects.bindings]]
+name = "GAME_ROOM"
+class_name = "GameRoom"
+
+[[migrations]]
+tag = "v1"
+new_classes = ["GameRoom"]
