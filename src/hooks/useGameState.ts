@@ -146,6 +146,22 @@ export function useGameState() {
     return () => source.close();
   }, []);
 
+  useEffect(() => {
+    const id = setInterval(() => {
+      setState(prev => {
+        if (!prev.activeEvent || Date.now() <= prev.activeEvent.endTime) return prev;
+        const wasMultiplier = prev.activeEvent.type === 'MULTIPLIER' || prev.activeEvent.type === 'CHAOS';
+        return {
+          ...prev,
+          activeEvent: null,
+          multiplier: wasMultiplier ? 1 : prev.multiplier,
+        };
+      });
+    }, 250);
+
+    return () => clearInterval(id);
+  }, []);
+
   const handleClick = useCallback(async () => {
     const next = await postJson('/api/stream/click');
     if (next) {
