@@ -141,18 +141,19 @@
   width: min(100vw, calc(100dvh * 9 / 16));
   height: min(100dvh, calc(100vw * 16 / 9));
   aspect-ratio: 9 / 16;
+  container-type: size;
 }
 
 .cookie-stage {
   display: grid;
   place-items: center;
-  width: min(74vw, 390px);
+  width: clamp(250px, 66cqw, 430px);
   aspect-ratio: 1;
 }
 
 .cookie-button {
-  width: min(68vw, 340px);
-  height: min(68vw, 340px);
+  width: clamp(230px, 60cqw, 390px);
+  height: clamp(230px, 60cqw, 390px);
 }
 
 .attention-particles {
@@ -173,7 +174,7 @@
   background: hsl(calc(var(--i) * 24deg) 95% 62%);
   transform:
     rotate(calc(var(--i) * 20deg))
-    translateY(-168px)
+    translateY(clamp(-210px, -32cqw, -132px))
     scale(1);
   animation: attentionOrbit 4.8s linear infinite, attentionPulse 1.4s ease-in-out infinite;
   animation-delay: calc(var(--i) * -0.12s), calc(var(--i) * -0.08s);
