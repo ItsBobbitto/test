@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, type CSSProperties } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   MousePointerClick, Heart, Leaf, Cog, Zap, Globe, Clock,
@@ -19,31 +19,29 @@ function formatNum(n: number): string {
 }
 
 const GIFT_PRESETS = [
-  { label: '$2',  amount: 2,  event: 'CLICK_FRENZY', desc: 'Frenzy x2 Â· 5 min' },
-  { label: '$5',  amount: 5,  event: 'GOLDEN_RAIN',  desc: 'Auto-Click Storm Â· 10 min' },
-  { label: '$10', amount: 10, event: 'CHAOS_MODE',   desc: 'Chaos Mode Â· 5 min' },
-  { label: '$20', amount: 20, event: 'BOSS',         desc: 'Boss Cookie Â· 150 HP' },
+  { label: '$2',  amount: 2,  event: 'CLICK_FRENZY', desc: 'Frenzy x2 · 5 min' },
+  { label: '$5',  amount: 5,  event: 'GOLDEN_RAIN',  desc: 'Auto-Click Storm · 10 min' },
+  { label: '$10', amount: 10, event: 'CHAOS_MODE',   desc: 'Chaos Mode · 5 min' },
+  { label: '$20', amount: 20, event: 'BOSS',         desc: 'Boss Cookie · 150 HP' },
   { label: '$50', amount: 50, event: 'WORLD_RESET',  desc: '+1x mult, CPS x3' },
 ];
 
 const JEWEL_PRESETS = [
   { label: '20',   event: 'COOKIE_RAIN',  desc: '+250 Cookies' },
-  { label: '50',   event: 'CLICK_FRENZY', desc: 'Frenzy x2 Â· 5 min' },
-  { label: '100',  event: 'GOLDEN_RAIN',  desc: 'Auto-Click Storm Â· 10 min' },
-  { label: '200',  event: 'CHAOS_MODE',   desc: 'Chaos Mode Â· 5 min' },
-  { label: '500',  event: 'BOSS',         desc: 'Boss Cookie Â· 150 HP' },
+  { label: '50',   event: 'CLICK_FRENZY', desc: 'Frenzy x2 · 5 min' },
+  { label: '100',  event: 'GOLDEN_RAIN',  desc: 'Auto-Click Storm · 10 min' },
+  { label: '200',  event: 'CHAOS_MODE',   desc: 'Chaos Mode · 5 min' },
+  { label: '500',  event: 'BOSS',         desc: 'Boss Cookie · 150 HP' },
   { label: '1000', event: 'WORLD_RESET',  desc: '+1x mult, CPS x3' },
 ];
 
 export function GamePage() {
-  const { state, handleClick, triggerEvent, buyUpgrade, displayCps } = useGameState();
+  const { state, handleClick, triggerEvent, displayCps } = useGameState();
   const [clicks, setClicks] = useState<{ id: string; x: number; y: number; val: number }[]>([]);
   const [rainItems, setRainItems] = useState<{ id: string; left: number; delay: number }[]>([]);
   const [panelTab, setPanelTab] = useState<'closed' | 'gifts' | 'upgrades'>('closed');
-  const [lastBought, setLastBought] = useState<string | null>(null);
   const [hypeEvent, setHypeEvent] = useState<{ username: string; amount?: number; eventType: string } | null>(null);
   const [simName, setSimName] = useState("Viewer");
-  const hypeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleCookieClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -75,41 +73,15 @@ export function GamePage() {
   }, [state.eventFeed]);
 
   useEffect(() => {
-    const source = new EventSource(`${window.location.origin}/api/stream/events`);
-
-    source.onmessage = (message) => {
-      try {
-        const data = JSON.parse(message.data);
-        const eventType = String(data.type || data.eventType || '').toUpperCase();
-
-        if (!eventType || eventType === 'CONNECTED') return;
-
-        const username = String(data.username || data.name || 'Viewer');
-        const amount = typeof data.amount === 'number' ? data.amount : undefined;
-
-        triggerEvent(eventType, username);
-
-        if (eventType !== 'CHAT') {
-          if (hypeTimeoutRef.current) clearTimeout(hypeTimeoutRef.current);
-          setHypeEvent({ username, amount, eventType });
-          hypeTimeoutRef.current = setTimeout(() => setHypeEvent(null), 5000);
-        }
-      } catch {
-        // Ignore malformed stream payloads.
-      }
-    };
-
-    return () => {
-      source.close();
-      if (hypeTimeoutRef.current) clearTimeout(hypeTimeoutRef.current);
-    };
-  }, [triggerEvent]);
-
-  const handleBuyUpgrade = (id: string) => {
-    buyUpgrade(id);
-    setLastBought(id);
-    setTimeout(() => setLastBought(null), 400);
-  };
+    if (!state.lastReward || state.lastReward.eventType === 'CHAT') return;
+    setHypeEvent({
+      username: state.lastReward.username,
+      amount: state.lastReward.amount,
+      eventType: state.lastReward.eventType,
+    });
+    const timeout = setTimeout(() => setHypeEvent(null), 5000);
+    return () => clearTimeout(timeout);
+  }, [state.lastReward?.timestamp]);
 
   const isChaos  = state.activeEvent?.type === 'CHAOS';
   const isBoss   = state.activeEvent?.type === 'BOSS';
@@ -117,10 +89,12 @@ export function GamePage() {
   const isArmy   = state.activeEvent?.type === 'ARMY';
   const effectiveMult = state.multiplier + state.permanentMultiplierBoost;
   const membershipStacks = Math.round(state.permanentCpsBonus / 0.1);
+  const unlockProgress = Math.min(100, (state.totalClicks / 1000) * 100);
+  const upgradeDefs = state.upgrades ?? UPGRADES;
 
   return (
-    <div className={`h-[100dvh] w-full flex justify-center bg-transparent ${isChaos ? 'animate-chaos' : ''}`}>
-      <div className="w-full h-full flex flex-col relative bg-background shadow-2xl overflow-hidden">
+    <div className={`h-[100dvh] w-full flex justify-center bg-black ${isChaos ? 'animate-chaos' : ''}`}>
+      <div className="live-frame flex flex-col relative bg-background shadow-2xl overflow-hidden">
 
         {/* WORLD RESET OVERLAY */}
         <AnimatePresence>
@@ -188,7 +162,7 @@ export function GamePage() {
         </div>
 
         {/* COOKIE ZONE */}
-        <div className="h-[360px] relative flex flex-col items-center justify-center overflow-hidden shrink-0">
+        <div className="flex-1 min-h-0 relative flex flex-col items-center justify-center overflow-hidden">
           {rainItems.map(item => (
             <div
               key={item.id}
@@ -218,7 +192,7 @@ export function GamePage() {
             )}
           </AnimatePresence>
 
-          {/* HYPE BANNER â€” shows when a real viewer sends Super Chat / Jewels */}
+          {/* HYPE BANNER — shows when a real viewer sends Super Chat / Jewels */}
           <AnimatePresence>
             {hypeEvent && (
               <motion.div
@@ -247,36 +221,46 @@ export function GamePage() {
             )}
           </AnimatePresence>
 
-          {/* SIDE REWARDS PANEL */}
-          <div className="absolute right-0 inset-y-0 w-[128px] bg-black/70 backdrop-blur-sm border-l border-white/10 z-20 flex flex-col py-2 px-2 overflow-hidden pointer-events-none">
-            <div className="text-[8px] uppercase tracking-widest text-amber-400 font-black mb-1">Super Chat</div>
-            {[
-              { a: '$2',  c: 'text-blue-400',    e: 'Frenzy x2 5m' },
-              { a: '$5',  c: 'text-green-400',   e: 'AutoClick 10m' },
-              { a: '$10', c: 'text-yellow-400',  e: 'Chaos 5min' },
-              { a: '$20', c: 'text-orange-400',  e: 'Boss Cookie' },
-              { a: '$50', c: 'text-red-400',     e: 'World Reset' },
-            ].map(r => (
-              <div key={r.a} className="flex items-baseline gap-1 py-[2px]">
-                <span className={`font-display font-black text-[11px] w-8 shrink-0 ${r.c}`}>{r.a}</span>
-                <span className="text-[9px] text-white/50 leading-none truncate">{r.e}</span>
+          {/* STREAM REWARD TIERS */}
+          <div className="absolute right-3 top-3 bottom-3 w-[152px] z-20 grid content-start gap-2 pointer-events-none">
+            <div className="reward-board superchat">
+              <div className="reward-board-title">
+                <span>Super Chat</span>
+                <strong>$</strong>
               </div>
-            ))}
-            <div className="my-1.5 border-t border-white/10" />
-            <div className="text-[8px] uppercase tracking-widest text-purple-400 font-black mb-1">Jewels</div>
-            {[
-              { a: '20',   c: 'text-purple-300',  e: '+250 cookies' },
-              { a: '50',   c: 'text-purple-300',  e: 'Frenzy x2 5m' },
-              { a: '100',  c: 'text-purple-400',  e: 'AutoClick 10m' },
-              { a: '200',  c: 'text-purple-400',  e: 'Chaos 5min' },
-              { a: '500',  c: 'text-fuchsia-400', e: 'Boss Cookie' },
-              { a: '1000', c: 'text-fuchsia-300', e: 'World Reset' },
-            ].map(r => (
-              <div key={r.a} className="flex items-baseline gap-1 py-[2px]">
-                <span className={`font-display font-black text-[11px] w-9 shrink-0 ${r.c}`}>{r.a}</span>
-                <span className="text-[9px] text-white/50 leading-none truncate">{r.e}</span>
+              {[
+                { a: '$2',  e: 'Frenzy',     tone: '#38bdf8' },
+                { a: '$5',  e: 'Storm',      tone: '#22c55e' },
+                { a: '$10', e: 'Chaos',      tone: '#eab308' },
+                { a: '$20', e: 'Boss',       tone: '#f97316' },
+                { a: '$50', e: 'Reset',      tone: '#ef4444' },
+              ].map(r => (
+                <div key={r.a} className="reward-tier" style={{ '--tier-color': r.tone } as CSSProperties}>
+                  <span>{r.a}</span>
+                  <strong>{r.e}</strong>
+                </div>
+              ))}
+            </div>
+
+            <div className="reward-board jewels">
+              <div className="reward-board-title">
+                <span>Jewels</span>
+                <strong>J</strong>
               </div>
-            ))}
+              {[
+                { a: '20',   e: '+250',  tone: '#c4b5fd' },
+                { a: '50',   e: 'Frenzy', tone: '#a78bfa' },
+                { a: '100',  e: 'Storm',  tone: '#8b5cf6' },
+                { a: '200',  e: 'Chaos',  tone: '#d946ef' },
+                { a: '500',  e: 'Boss',   tone: '#f0abfc' },
+                { a: '1000', e: 'Reset',  tone: '#f5d0fe' },
+              ].map(r => (
+                <div key={r.a} className="reward-tier" style={{ '--tier-color': r.tone } as CSSProperties}>
+                  <span>{r.a}</span>
+                  <strong>{r.e}</strong>
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="relative mr-[104px]">
@@ -340,9 +324,9 @@ export function GamePage() {
               </motion.div>
             ))}
 
-            {/* â”€â”€ UPGRADE AURAS â”€â”€ */}
+            {/* ── UPGRADE AURAS ── */}
             {(() => {
-              const cursorOwned   = state.upgradeCounts['cursor']      || 0;
+              const cursorOwned   = state.upgradesUnlocked ? 8 : 0;
               const grandmaOwned  = state.upgradeCounts['grandma']     || 0;
               const farmOwned     = state.upgradeCounts['farm']        || 0;
               const factoryOwned  = state.upgradeCounts['factory']     || 0;
@@ -354,7 +338,7 @@ export function GamePage() {
 
               return (
                 <>
-                  {/* Cursor orbit ring â€” shown whenever cursors owned & not during army */}
+                  {/* Cursor orbit ring — shown whenever cursors owned & not during army */}
                   {visibleCursors > 0 && !isArmy && (
                     <div
                       className="absolute inset-0 pointer-events-none z-15"
@@ -375,7 +359,7 @@ export function GamePage() {
                     </div>
                   )}
 
-                  {/* Grandma hearts â€” static positions, pulse */}
+                  {/* Grandma hearts — static positions, pulse */}
                   {visibleGrandmas > 0 && Array.from({ length: visibleGrandmas }).map((_, i) => {
                     const angle = (i / visibleGrandmas) * 360 + 45;
                     const rad = (angle * Math.PI) / 180;
@@ -399,7 +383,7 @@ export function GamePage() {
                     );
                   })}
 
-                  {/* Farm â€” leaves drift upward */}
+                  {/* Farm — leaves drift upward */}
                   {farmOwned > 0 && [0, 1, 2].map(i => (
                     <motion.div
                       key={`leaf-${i}`}
@@ -412,7 +396,7 @@ export function GamePage() {
                     </motion.div>
                   ))}
 
-                  {/* Factory â€” cog slowly spins behind cookie (outer glow only, non-intrusive) */}
+                  {/* Factory — cog slowly spins behind cookie (outer glow only, non-intrusive) */}
                   {factoryOwned > 0 && (
                     <motion.div
                       className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-5"
@@ -423,7 +407,7 @@ export function GamePage() {
                     </motion.div>
                   )}
 
-                  {/* Lab â€” zap sparks shoot out periodically */}
+                  {/* Lab — zap sparks shoot out periodically */}
                   {labOwned > 0 && [0, 1].map(i => (
                     <motion.div
                       key={`zap-${i}`}
@@ -441,7 +425,7 @@ export function GamePage() {
                     </motion.div>
                   ))}
 
-                  {/* Portal â€” ring orbits counter-clockwise */}
+                  {/* Portal — ring orbits counter-clockwise */}
                   {portalOwned > 0 && (
                     <div
                       className="absolute inset-0 pointer-events-none z-10"
@@ -459,7 +443,7 @@ export function GamePage() {
                     </div>
                   )}
 
-                  {/* Time Machine â€” clock pulses at center, subtle glow ring */}
+                  {/* Time Machine — clock pulses at center, subtle glow ring */}
                   {timeMachOwned > 0 && (
                     <motion.div
                       className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-5 rounded-full"
@@ -474,69 +458,70 @@ export function GamePage() {
           </div>
         </div>
 
-        {/* UPGRADES GRID */}
-        <div className="shrink-0 w-full px-3 pt-3 pb-2 border-t border-border/40 bg-sidebar/30">
-          <div className="text-[9px] text-muted-foreground uppercase tracking-widest font-bold mb-2 px-0.5">Upgrades</div>
-          <div className="grid grid-cols-4 gap-2">
-            {UPGRADES.map(def => {
-              const owned  = state.upgradeCounts[def.id] || 0;
-              const cost   = getUpgradeCost(def, owned);
-              const canBuy = state.cookies >= cost;
-              const Icon   = ICON_MAP[def.iconName] ?? Cog;
-              const isBoughtFlash = lastBought === def.id;
-
-              return (
-                <motion.button
-                  key={def.id}
-                  onClick={() => handleBuyUpgrade(def.id)}
-                  disabled={!canBuy}
-                  data-testid={`upgrade-${def.id}`}
-                  animate={isBoughtFlash ? { scale: [1, 1.15, 1] } : {}}
-                  transition={{ duration: 0.25 }}
-                  className={`
-                    relative flex flex-col rounded-lg overflow-hidden border transition-all duration-150 select-none
-                    ${canBuy
-                      ? 'border-transparent cursor-pointer active:scale-95'
-                      : 'border-border/30 opacity-40 cursor-not-allowed'}
-                  `}
-                  style={canBuy ? {
-                    boxShadow: `0 0 12px ${def.color}55, 0 0 0 1.5px ${def.color}88`,
-                  } : {}}
-                >
-                  {/* Icon zone */}
+        {/* GLOBAL UPGRADE PROGRESSION */}
+        <div className="shrink-0 w-full px-4 pt-3 pb-2 border-t border-border/40 bg-sidebar/30">
+          {!state.upgradesUnlocked ? (
+            <div className="core-upgrade-card">
+              <div className="core-upgrade-icon">
+                <Zap size={34} fill="currentColor" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-[10px] text-amber-300 uppercase tracking-[0.18em] font-black">First Global Upgrade</div>
+                <div className="font-display text-2xl leading-none text-white mt-1">Cookie Core</div>
+                <div className="mt-2 h-3 rounded-full bg-black/50 overflow-hidden border border-white/10">
                   <div
-                    className="w-full flex items-center justify-center py-3"
-                    style={{ background: `${def.color}22` }}
-                  >
-                    <Icon size={26} style={{ color: def.color }} strokeWidth={1.5} />
-                  </div>
+                    className="h-full rounded-full bg-gradient-to-r from-amber-300 via-orange-400 to-red-500"
+                    style={{ width: `${unlockProgress}%` }}
+                  />
+                </div>
+                <div className="mt-1 flex justify-between text-[10px] font-black text-white/60">
+                  <span>{formatNum(state.totalClicks)} / 1,000 clicks</span>
+                  <span>{Math.floor(unlockProgress)}%</span>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center justify-between mb-2 px-0.5">
+                <div className="text-[9px] text-muted-foreground uppercase tracking-widest font-bold">Auto Upgrades</div>
+                <div className="text-[9px] text-green-400 uppercase tracking-widest font-black">Unlocked</div>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                {upgradeDefs.map(def => {
+                  const owned = state.upgradeCounts[def.id] || 0;
+                  const cost = getUpgradeCost(def, owned);
+                  const Icon = ICON_MAP[def.iconName] ?? Cog;
 
-                  {/* Info zone */}
-                  <div className="flex flex-col items-center px-1 py-1.5 bg-black/30 gap-0.5">
-                    <div className="text-[10px] font-bold text-white/90 leading-none truncate w-full text-center">
-                      {def.name}
-                    </div>
-                    <div className="text-[9px] font-mono text-muted-foreground leading-none">
-                      +{def.cpsPerUnit}/s
-                    </div>
-                    <div className={`text-[11px] font-display leading-none mt-0.5 ${canBuy ? 'text-white' : 'text-muted-foreground'}`}>
-                      {formatNum(cost)}
-                    </div>
-                  </div>
-
-                  {/* Owned badge */}
-                  {owned > 0 && (
+                  return (
                     <div
-                      className="absolute top-1 right-1 min-w-[18px] h-[18px] rounded-full flex items-center justify-center text-[9px] font-bold text-white px-1"
-                      style={{ backgroundColor: def.color }}
+                      key={def.id}
+                      data-testid={`upgrade-${def.id}`}
+                      className="relative flex flex-col rounded-lg overflow-hidden border border-white/10 bg-black/30 select-none"
+                      style={{ boxShadow: owned > 0 ? `0 0 12px ${def.color}33` : undefined }}
                     >
-                      {owned}
+                      <div className="w-full flex items-center justify-center py-2.5" style={{ background: `${def.color}22` }}>
+                        <Icon size={22} style={{ color: def.color }} strokeWidth={1.7} />
+                      </div>
+                      <div className="flex flex-col items-center px-1 py-1.5 bg-black/30 gap-0.5">
+                        <div className="text-[9px] font-bold text-white/90 leading-none truncate w-full text-center">
+                          {def.name}
+                        </div>
+                        <div className="text-[8px] font-mono text-muted-foreground leading-none">
+                          next {formatNum(cost)}
+                        </div>
+                      </div>
+                      <div
+                        className="absolute top-1 right-1 min-w-[18px] h-[18px] rounded-full flex items-center justify-center text-[9px] font-bold text-white px-1"
+                        style={{ backgroundColor: owned > 0 ? def.color : 'rgba(255,255,255,0.16)' }}
+                      >
+                        {owned}
+                      </div>
                     </div>
-                  )}
-                </motion.button>
-              );
-            })}
-          </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
         </div>
 
 
@@ -560,7 +545,7 @@ export function GamePage() {
                   }`} />
                   <span className="text-[9px] font-bold text-white/70 truncate">{state.eventFeed[0].name}</span>
                   {state.eventFeed[0].message && (
-                    <span className="text-[8px] text-white/30 truncate">Â· {state.eventFeed[0].message}</span>
+                    <span className="text-[8px] text-white/30 truncate">· {state.eventFeed[0].message}</span>
                   )}
                 </motion.div>
               ) : (
@@ -574,14 +559,14 @@ export function GamePage() {
                 onClick={() => setPanelTab(t => t === 'gifts' ? 'closed' : 'gifts')}
                 className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-colors ${panelTab === 'gifts' ? 'text-amber-400 bg-amber-500/10' : 'text-muted-foreground hover:text-white'}`}
               >
-                {panelTab === 'gifts' ? 'â–¼' : 'â–²'} Simulator
+                {panelTab === 'gifts' ? '▼' : '▲'} Simulator
               </button>
               <div className="w-px bg-border/50" />
               <button
                 onClick={() => setPanelTab(t => t === 'upgrades' ? 'closed' : 'upgrades')}
                 className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-colors ${panelTab === 'upgrades' ? 'text-purple-400 bg-purple-500/10' : 'text-muted-foreground hover:text-white'}`}
               >
-                {panelTab === 'upgrades' ? 'â–¼' : 'â–²'} Events
+                {panelTab === 'upgrades' ? '▼' : '▲'} Events
               </button>
             </div>
 
@@ -709,19 +694,19 @@ export function GamePage() {
                     </button>
                     <button onClick={() => triggerEvent('CLICK_FRENZY')} className="py-2 bg-purple-500/20 text-purple-400 border border-purple-500/40 text-[10px] font-bold rounded hover:bg-purple-500/30">
                       Frenzy x3
-                      <div className="text-[8px] text-purple-600 font-normal mt-0.5">3x multiplier Â· 8s</div>
+                      <div className="text-[8px] text-purple-600 font-normal mt-0.5">3x multiplier · 8s</div>
                     </button>
                     <button onClick={() => triggerEvent('CHAOS_MODE')} className="py-2 bg-purple-500/20 text-purple-400 border border-purple-500/40 text-[10px] font-bold rounded hover:bg-purple-500/30">
                       Chaos Mode
-                      <div className="text-[8px] text-purple-600 font-normal mt-0.5">Random mult Â· 20s</div>
+                      <div className="text-[8px] text-purple-600 font-normal mt-0.5">Random mult · 20s</div>
                     </button>
                     <button onClick={() => triggerEvent('BOSS')} className="py-2 bg-red-500/20 text-red-400 border border-red-500/40 text-[10px] font-bold rounded hover:bg-red-500/30">
                       Boss Cookie
-                      <div className="text-[8px] text-red-600 font-normal mt-0.5">200 HP Â· defeat for reward</div>
+                      <div className="text-[8px] text-red-600 font-normal mt-0.5">200 HP · defeat for reward</div>
                     </button>
                     <button onClick={() => triggerEvent('WORLD_RESET')} className="py-2 bg-red-500/20 text-red-400 border border-red-500/40 text-[10px] font-bold rounded hover:bg-red-500/30">
                       World Reset
-                      <div className="text-[8px] text-red-600 font-normal mt-0.5">+0.5x mult Â· CPS x2</div>
+                      <div className="text-[8px] text-red-600 font-normal mt-0.5">+0.5x mult · CPS x2</div>
                     </button>
                   </div>
                 </motion.div>
