@@ -253,10 +253,10 @@ export function GamePage() {
           <div className="mini-chat-panel">
             <div className="mini-chat-title">Live Chat</div>
             <div className="mini-chat-list">
-              {(state.eventFeed.length ? state.eventFeed : [{ id: 'empty', name: 'Waiting for chat', tier: 'LOW' as const, timestamp: 0, message: 'messages become clicks' }]).slice(0, 6).map((event) => (
-                <div key={event.id} className={`mini-chat-row ${event.tier.toLowerCase()}`}>
-                  <span>{event.name}</span>
-                  {event.message && <small>{event.message}</small>}
+              {(state.chatMessages?.length ? state.chatMessages : [{ id: 'empty', username: 'Waiting for chat', timestamp: 0, message: 'messages become clicks' }]).slice(0, 7).map((chat) => (
+                <div key={chat.id} className="mini-chat-row">
+                  <span>{chat.username}</span>
+                  <small>{chat.message}</small>
                 </div>
               ))}
             </div>
@@ -530,7 +530,7 @@ export function GamePage() {
         </div>
 
         {/* GLOBAL UPGRADE PROGRESSION */}
-        <div className="shrink-0 w-full px-4 pt-3 pb-2 border-t border-border/40 bg-sidebar/30">
+        <div className="upgrade-section shrink-0 w-full px-4 pt-3 pb-2 border-t border-border/40 bg-sidebar/30">
           {!state.upgradesUnlocked ? (
             <div className="core-upgrade-card">
               <div className="core-upgrade-icon">
