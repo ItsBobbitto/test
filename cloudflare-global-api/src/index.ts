@@ -193,6 +193,7 @@ export class GameRoom {
   }
 
   private serializeState() {
+    this.expireActiveEventIfNeeded();
     return {
       ...this.gameState,
       displayCps: computeDisplayCps(this.gameState),
@@ -218,7 +219,22 @@ export class GameRoom {
     this.expireActiveEventIfNeeded();
     this.autoClaimUpgrades();
     await this.save();
+    await this.scheduleActiveEventAlarm();
     this.broadcast({ type: "STATE", state: this.serializeState() });
+  }
+
+  async alarm(): Promise<void> {
+    this.expireActiveEventIfNeeded();
+    await this.save();
+    this.broadcast({ type: "STATE", state: this.serializeState() });
+  }
+
+  private async scheduleActiveEventAlarm() {
+    if (this.gameState.activeEvent) {
+      await this.state.storage.setAlarm(this.gameState.activeEvent.endTime + 50);
+    } else {
+      await this.state.storage.deleteAlarm();
+    }
   }
 
   private write(writer: WritableStreamDefaultWriter<Uint8Array>, payload: unknown) {
