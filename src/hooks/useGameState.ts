@@ -59,6 +59,8 @@ export const UPGRADES: UpgradeDef[] = [
   { id: 'timemachine', name: 'Time Machine', baseCost: 200000, cpsPerUnit: 750, iconName: 'Clock', color: '#eab308' },
 ];
 
+const API_BASE = 'https://chlimroapi.articskywatcher.workers.dev';
+
 const EMPTY_STATE: GameState = {
   cookies: 0,
   totalClicks: 0,
@@ -106,7 +108,7 @@ function offlineState(): GameState {
 
 async function postJson(path: string, payload?: object): Promise<GameState | null> {
   try {
-    const response = await fetch(path, {
+    const response = await fetch(`${API_BASE}${path}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: payload ? JSON.stringify(payload) : undefined,
@@ -124,7 +126,7 @@ export function useGameState() {
   const [state, setState] = useState<GameState>(EMPTY_STATE);
 
   useEffect(() => {
-    const source = new EventSource(`${window.location.origin}/api/stream/events`);
+    const source = new EventSource(`${API_BASE}/api/stream/events`);
 
     source.onmessage = (message) => {
       try {
