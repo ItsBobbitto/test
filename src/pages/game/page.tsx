@@ -1,4 +1,4 @@
-import { useState, useEffect, type CSSProperties } from 'react';
+import { useState, useEffect, useRef, type CSSProperties } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   MousePointerClick, Heart, Leaf, Cog, Zap, Globe, Clock,
@@ -42,6 +42,8 @@ export function GamePage() {
   const [panelTab, setPanelTab] = useState<'closed' | 'gifts' | 'upgrades'>('closed');
   const [hypeEvent, setHypeEvent] = useState<{ username: string; amount?: number; eventType: string } | null>(null);
   const [simName, setSimName] = useState("Viewer");
+  const [chatPops, setChatPops] = useState<{ id: string; x: number; y: number; val: number }[]>([]);
+  const previousClicks = useRef<number | null>(null);
 
   const handleCookieClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -82,6 +84,24 @@ export function GamePage() {
     const timeout = setTimeout(() => setHypeEvent(null), 5000);
     return () => clearTimeout(timeout);
   }, [state.lastReward?.timestamp]);
+
+  useEffect(() => {
+    if (previousClicks.current === null) {
+      previousClicks.current = state.totalClicks;
+      return;
+    }
+
+    const gained = state.totalClicks - previousClicks.current;
+    previousClicks.current = state.totalClicks;
+
+    if (gained <= 0) return;
+
+    const id = Math.random().toString(36).slice(2);
+    const x = 28 + Math.random() * 44;
+    const y = 24 + Math.random() * 46;
+    setChatPops(prev => [...prev, { id, x, y, val: gained }]);
+    setTimeout(() => setChatPops(prev => prev.filter(pop => pop.id !== id)), 900);
+  }, [state.totalClicks]);
 
   const isChaos  = state.activeEvent?.type === 'CHAOS';
   const isBoss   = state.activeEvent?.type === 'BOSS';
@@ -221,8 +241,73 @@ export function GamePage() {
             )}
           </AnimatePresence>
 
+          <div className="stream-playfield">
+          <div className="mini-chat-panel">
+            <div className="mini-chat-title">Live Chat</div>
+            <div className="mini-chat-list">
+              {(state.eventFeed.length ? state.eventFeed : [{ id: 'empty', name: 'Waiting for chat', tier: 'LOW' as const, timestamp: 0, message: 'messages become clicks' }]).slice(0, 6).map((event) => (
+                <div key={event.id} className={`mini-chat-row ${event.tier.toLowerCase()}`}>
+                  <span>{event.name}</span>
+                  {event.message && <small>{event.message}</small>}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="cookie-stack">
+            <div className="cookie-counter-card">
+              <span>Cookies</span>
+              <strong>{formatNum(state.cookies)}</strong>
+              <small>{displayCps.toFixed(1)} CPS · x{effectiveMult.toFixed(1)}</small>
+            </div>
+
+          <div className="cookie-stage relative">
+            <div className="milk-wave" aria-hidden="true">
+              <div className="milk-wave-layer" />
+            </div>
+            <div className="attention-particles" aria-hidden="true">
+              {Array.from({ length: 18 }).map((_, i) => (
+                <span key={i} style={{ '--i': i } as CSSProperties} />
+              ))}
+            </div>
+            <motion.div
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.93 }}
+              onClick={handleCookieClick}
+              data-testid="cookie-button"
+              className="cookie-button cursor-pointer rounded-full relative z-20 select-none"
+            >
+              <div className="cookie-face" />
+              <div className="cookie-shine" />
+              {!isBoss && (
+                <>
+                  <div className="chip chip-a" />
+                  <div className="chip chip-b" />
+                  <div className="chip chip-c" />
+                  <div className="chip chip-d" />
+                  <div className="chip chip-e" />
+                  <div className="chip chip-f" />
+                </>
+              )}
+            </motion.div>
+
+            <AnimatePresence>
+              {chatPops.map(pop => (
+                <motion.div
+                  key={pop.id}
+                  initial={{ opacity: 0, scale: 0.5, left: `${pop.x}%`, top: `${pop.y}%` }}
+                  animate={{ opacity: [0, 1, 0], scale: [0.5, 1.35, 1], y: -86 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.85 }}
+                  className="chat-click-pop"
+                >
+                  +{formatNum(pop.val)}
+                </motion.div>
+              ))}
+            </AnimatePresence>
+
           {/* STREAM REWARD TIERS */}
-          <div className="absolute right-2 top-2 bottom-2 w-[116px] z-20 grid content-start gap-1.5 pointer-events-none">
+          <div className="reward-side-stack">
             <div className="reward-board superchat">
               <div className="reward-board-title">
                 <span>Super Chat</span>
@@ -263,33 +348,6 @@ export function GamePage() {
             </div>
           </div>
 
-          <div className="cookie-stage relative mr-[72px]">
-            <div className="attention-particles" aria-hidden="true">
-              {Array.from({ length: 18 }).map((_, i) => (
-                <span key={i} style={{ '--i': i } as CSSProperties} />
-              ))}
-            </div>
-            <motion.div
-              whileHover={{ scale: 1.04 }}
-              whileTap={{ scale: 0.93 }}
-              onClick={handleCookieClick}
-              data-testid="cookie-button"
-              className="cookie-button cursor-pointer rounded-full relative z-20 select-none"
-            >
-              <div className="cookie-face" />
-              <div className="cookie-shine" />
-              {!isBoss && (
-                <>
-                  <div className="chip chip-a" />
-                  <div className="chip chip-b" />
-                  <div className="chip chip-c" />
-                  <div className="chip chip-d" />
-                  <div className="chip chip-e" />
-                  <div className="chip chip-f" />
-                </>
-              )}
-            </motion.div>
-
             {isBoss && (state.activeEvent?.metadata?.hp ?? 0) > 0 && (
               <div className="absolute -bottom-14 left-1/2 -translate-x-1/2 w-52 z-30">
                 <Progress
@@ -309,7 +367,7 @@ export function GamePage() {
                   initial={{ opacity: 1, x: click.x - 20, y: click.y - 30 }}
                   animate={{ opacity: 0, y: click.y - 110 }}
                   exit={{ opacity: 0 }}
-                  className="absolute pointer-events-none z-40 font-display text-2xl text-white drop-shadow-[0_3px_3px_rgba(0,0,0,0.9)]"
+                  className="absolute pointer-events-none z-60 font-display text-white chat-click-pop"
                 >
                   +{formatNum(click.val)}
                 </motion.div>
@@ -461,6 +519,8 @@ export function GamePage() {
                 </>
               );
             })()}
+          </div>
+          </div>
           </div>
         </div>
 
