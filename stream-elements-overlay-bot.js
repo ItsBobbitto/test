@@ -5,7 +5,7 @@
   Set GAME_EVENT_ENDPOINT if the cookie game should react to events.
 */
 
-const GAME_EVENT_ENDPOINT = "";
+const GAME_EVENT_ENDPOINT = "https://chlimro.applesmp.us/api/stream/event";
 
 const REWARD_COPY = {
   SUBSCRIBER: "Sub Hype: +100 cookies and 1.5x for 90s",
