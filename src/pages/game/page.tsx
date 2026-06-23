@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   MousePointerClick, Heart, Leaf, Cog, Zap, Globe, Clock,
@@ -19,19 +19,19 @@ function formatNum(n: number): string {
 }
 
 const GIFT_PRESETS = [
-  { label: '$2',  amount: 2,  event: 'CLICK_FRENZY', desc: 'Frenzy x2 · 5 min' },
-  { label: '$5',  amount: 5,  event: 'GOLDEN_RAIN',  desc: 'Auto-Click Storm · 10 min' },
-  { label: '$10', amount: 10, event: 'CHAOS_MODE',   desc: 'Chaos Mode · 5 min' },
-  { label: '$20', amount: 20, event: 'BOSS',         desc: 'Boss Cookie · 150 HP' },
+  { label: '$2',  amount: 2,  event: 'CLICK_FRENZY', desc: 'Frenzy x2 Â· 5 min' },
+  { label: '$5',  amount: 5,  event: 'GOLDEN_RAIN',  desc: 'Auto-Click Storm Â· 10 min' },
+  { label: '$10', amount: 10, event: 'CHAOS_MODE',   desc: 'Chaos Mode Â· 5 min' },
+  { label: '$20', amount: 20, event: 'BOSS',         desc: 'Boss Cookie Â· 150 HP' },
   { label: '$50', amount: 50, event: 'WORLD_RESET',  desc: '+1x mult, CPS x3' },
 ];
 
 const JEWEL_PRESETS = [
   { label: '20',   event: 'COOKIE_RAIN',  desc: '+250 Cookies' },
-  { label: '50',   event: 'CLICK_FRENZY', desc: 'Frenzy x2 · 5 min' },
-  { label: '100',  event: 'GOLDEN_RAIN',  desc: 'Auto-Click Storm · 10 min' },
-  { label: '200',  event: 'CHAOS_MODE',   desc: 'Chaos Mode · 5 min' },
-  { label: '500',  event: 'BOSS',         desc: 'Boss Cookie · 150 HP' },
+  { label: '50',   event: 'CLICK_FRENZY', desc: 'Frenzy x2 Â· 5 min' },
+  { label: '100',  event: 'GOLDEN_RAIN',  desc: 'Auto-Click Storm Â· 10 min' },
+  { label: '200',  event: 'CHAOS_MODE',   desc: 'Chaos Mode Â· 5 min' },
+  { label: '500',  event: 'BOSS',         desc: 'Boss Cookie Â· 150 HP' },
   { label: '1000', event: 'WORLD_RESET',  desc: '+1x mult, CPS x3' },
 ];
 
@@ -43,6 +43,7 @@ export function GamePage() {
   const [lastBought, setLastBought] = useState<string | null>(null);
   const [hypeEvent, setHypeEvent] = useState<{ username: string; amount?: number; eventType: string } | null>(null);
   const [simName, setSimName] = useState("Viewer");
+  const hypeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleCookieClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -73,6 +74,37 @@ export function GamePage() {
     }
   }, [state.eventFeed]);
 
+  useEffect(() => {
+    const source = new EventSource(`${window.location.origin}/api/stream/events`);
+
+    source.onmessage = (message) => {
+      try {
+        const data = JSON.parse(message.data);
+        const eventType = String(data.type || data.eventType || '').toUpperCase();
+
+        if (!eventType || eventType === 'CONNECTED') return;
+
+        const username = String(data.username || data.name || 'Viewer');
+        const amount = typeof data.amount === 'number' ? data.amount : undefined;
+
+        triggerEvent(eventType, username);
+
+        if (eventType !== 'CHAT') {
+          if (hypeTimeoutRef.current) clearTimeout(hypeTimeoutRef.current);
+          setHypeEvent({ username, amount, eventType });
+          hypeTimeoutRef.current = setTimeout(() => setHypeEvent(null), 5000);
+        }
+      } catch {
+        // Ignore malformed stream payloads.
+      }
+    };
+
+    return () => {
+      source.close();
+      if (hypeTimeoutRef.current) clearTimeout(hypeTimeoutRef.current);
+    };
+  }, [triggerEvent]);
+
   const handleBuyUpgrade = (id: string) => {
     buyUpgrade(id);
     setLastBought(id);
@@ -87,8 +119,8 @@ export function GamePage() {
   const membershipStacks = Math.round(state.permanentCpsBonus / 0.1);
 
   return (
-    <div className={`min-h-screen w-full flex justify-center bg-transparent ${isChaos ? 'animate-chaos' : ''}`}>
-      <div className="w-full max-w-[480px] h-[100dvh] flex flex-col relative bg-background border-x border-border shadow-2xl overflow-hidden">
+    <div className={`h-[100dvh] w-full flex justify-center bg-transparent ${isChaos ? 'animate-chaos' : ''}`}>
+      <div className="w-full h-full flex flex-col relative bg-background shadow-2xl overflow-hidden">
 
         {/* WORLD RESET OVERLAY */}
         <AnimatePresence>
@@ -186,7 +218,7 @@ export function GamePage() {
             )}
           </AnimatePresence>
 
-          {/* HYPE BANNER — shows when a real viewer sends Super Chat / Jewels */}
+          {/* HYPE BANNER â€” shows when a real viewer sends Super Chat / Jewels */}
           <AnimatePresence>
             {hypeEvent && (
               <motion.div
@@ -308,7 +340,7 @@ export function GamePage() {
               </motion.div>
             ))}
 
-            {/* ── UPGRADE AURAS ── */}
+            {/* â”€â”€ UPGRADE AURAS â”€â”€ */}
             {(() => {
               const cursorOwned   = state.upgradeCounts['cursor']      || 0;
               const grandmaOwned  = state.upgradeCounts['grandma']     || 0;
@@ -322,7 +354,7 @@ export function GamePage() {
 
               return (
                 <>
-                  {/* Cursor orbit ring — shown whenever cursors owned & not during army */}
+                  {/* Cursor orbit ring â€” shown whenever cursors owned & not during army */}
                   {visibleCursors > 0 && !isArmy && (
                     <div
                       className="absolute inset-0 pointer-events-none z-15"
@@ -343,7 +375,7 @@ export function GamePage() {
                     </div>
                   )}
 
-                  {/* Grandma hearts — static positions, pulse */}
+                  {/* Grandma hearts â€” static positions, pulse */}
                   {visibleGrandmas > 0 && Array.from({ length: visibleGrandmas }).map((_, i) => {
                     const angle = (i / visibleGrandmas) * 360 + 45;
                     const rad = (angle * Math.PI) / 180;
@@ -367,7 +399,7 @@ export function GamePage() {
                     );
                   })}
 
-                  {/* Farm — leaves drift upward */}
+                  {/* Farm â€” leaves drift upward */}
                   {farmOwned > 0 && [0, 1, 2].map(i => (
                     <motion.div
                       key={`leaf-${i}`}
@@ -380,7 +412,7 @@ export function GamePage() {
                     </motion.div>
                   ))}
 
-                  {/* Factory — cog slowly spins behind cookie (outer glow only, non-intrusive) */}
+                  {/* Factory â€” cog slowly spins behind cookie (outer glow only, non-intrusive) */}
                   {factoryOwned > 0 && (
                     <motion.div
                       className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-5"
@@ -391,7 +423,7 @@ export function GamePage() {
                     </motion.div>
                   )}
 
-                  {/* Lab — zap sparks shoot out periodically */}
+                  {/* Lab â€” zap sparks shoot out periodically */}
                   {labOwned > 0 && [0, 1].map(i => (
                     <motion.div
                       key={`zap-${i}`}
@@ -409,7 +441,7 @@ export function GamePage() {
                     </motion.div>
                   ))}
 
-                  {/* Portal — ring orbits counter-clockwise */}
+                  {/* Portal â€” ring orbits counter-clockwise */}
                   {portalOwned > 0 && (
                     <div
                       className="absolute inset-0 pointer-events-none z-10"
@@ -427,7 +459,7 @@ export function GamePage() {
                     </div>
                   )}
 
-                  {/* Time Machine — clock pulses at center, subtle glow ring */}
+                  {/* Time Machine â€” clock pulses at center, subtle glow ring */}
                   {timeMachOwned > 0 && (
                     <motion.div
                       className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-5 rounded-full"
@@ -528,7 +560,7 @@ export function GamePage() {
                   }`} />
                   <span className="text-[9px] font-bold text-white/70 truncate">{state.eventFeed[0].name}</span>
                   {state.eventFeed[0].message && (
-                    <span className="text-[8px] text-white/30 truncate">· {state.eventFeed[0].message}</span>
+                    <span className="text-[8px] text-white/30 truncate">Â· {state.eventFeed[0].message}</span>
                   )}
                 </motion.div>
               ) : (
@@ -542,14 +574,14 @@ export function GamePage() {
                 onClick={() => setPanelTab(t => t === 'gifts' ? 'closed' : 'gifts')}
                 className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-colors ${panelTab === 'gifts' ? 'text-amber-400 bg-amber-500/10' : 'text-muted-foreground hover:text-white'}`}
               >
-                {panelTab === 'gifts' ? '▼' : '▲'} Simulator
+                {panelTab === 'gifts' ? 'â–¼' : 'â–²'} Simulator
               </button>
               <div className="w-px bg-border/50" />
               <button
                 onClick={() => setPanelTab(t => t === 'upgrades' ? 'closed' : 'upgrades')}
                 className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-colors ${panelTab === 'upgrades' ? 'text-purple-400 bg-purple-500/10' : 'text-muted-foreground hover:text-white'}`}
               >
-                {panelTab === 'upgrades' ? '▼' : '▲'} Events
+                {panelTab === 'upgrades' ? 'â–¼' : 'â–²'} Events
               </button>
             </div>
 
@@ -677,19 +709,19 @@ export function GamePage() {
                     </button>
                     <button onClick={() => triggerEvent('CLICK_FRENZY')} className="py-2 bg-purple-500/20 text-purple-400 border border-purple-500/40 text-[10px] font-bold rounded hover:bg-purple-500/30">
                       Frenzy x3
-                      <div className="text-[8px] text-purple-600 font-normal mt-0.5">3x multiplier · 8s</div>
+                      <div className="text-[8px] text-purple-600 font-normal mt-0.5">3x multiplier Â· 8s</div>
                     </button>
                     <button onClick={() => triggerEvent('CHAOS_MODE')} className="py-2 bg-purple-500/20 text-purple-400 border border-purple-500/40 text-[10px] font-bold rounded hover:bg-purple-500/30">
                       Chaos Mode
-                      <div className="text-[8px] text-purple-600 font-normal mt-0.5">Random mult · 20s</div>
+                      <div className="text-[8px] text-purple-600 font-normal mt-0.5">Random mult Â· 20s</div>
                     </button>
                     <button onClick={() => triggerEvent('BOSS')} className="py-2 bg-red-500/20 text-red-400 border border-red-500/40 text-[10px] font-bold rounded hover:bg-red-500/30">
                       Boss Cookie
-                      <div className="text-[8px] text-red-600 font-normal mt-0.5">200 HP · defeat for reward</div>
+                      <div className="text-[8px] text-red-600 font-normal mt-0.5">200 HP Â· defeat for reward</div>
                     </button>
                     <button onClick={() => triggerEvent('WORLD_RESET')} className="py-2 bg-red-500/20 text-red-400 border border-red-500/40 text-[10px] font-bold rounded hover:bg-red-500/30">
                       World Reset
-                      <div className="text-[8px] text-red-600 font-normal mt-0.5">+0.5x mult · CPS x2</div>
+                      <div className="text-[8px] text-red-600 font-normal mt-0.5">+0.5x mult Â· CPS x2</div>
                     </button>
                   </div>
                 </motion.div>
