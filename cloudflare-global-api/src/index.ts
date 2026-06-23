@@ -33,6 +33,7 @@ interface RewardEvent {
   username: string;
   amount?: number;
   eventType: string;
+  message?: string;
   timestamp: number;
 }
 
@@ -180,11 +181,12 @@ export class GameRoom {
       const eventType = normalizeEventType(body.type, body.eventType, body.amount);
       const username = String(body.username || body.name || "Anonymous");
       const amount = body.amount !== undefined ? Number(body.amount) : undefined;
+      const message = body.message !== undefined ? String(body.message).slice(0, 120) : undefined;
 
-      this.gameState.lastReward = { username, amount, eventType, timestamp: Date.now() };
-      await this.triggerGameEvent(eventType, username);
+      this.gameState.lastReward = { username, amount, eventType, message, timestamp: Date.now() };
+      await this.triggerGameEvent(eventType, username, message);
 
-      this.broadcast({ type: "EVENT", event: { type: eventType, username, amount, timestamp: Date.now() } });
+      this.broadcast({ type: "EVENT", event: { type: eventType, username, amount, message, timestamp: Date.now() } });
       await this.saveAndBroadcast();
       return json({ ok: true, eventType, state: this.serializeState(), connectedClients: this.clients.size });
     }
@@ -320,9 +322,10 @@ export class GameRoom {
     if (wasMultiplier) this.gameState.multiplier = 1;
   }
 
-  private async triggerGameEvent(type: string, actor: string) {
+  private async triggerGameEvent(type: string, actor: string, message?: string) {
     switch (type) {
       case "CHAT":
+        this.addFeed(actor, "LOW", message || "sent a chat message");
         await this.registerClick();
         break;
       case "COOKIE_RAIN":
