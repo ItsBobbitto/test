@@ -137,6 +137,113 @@
   height: 100%;
 }
 
+.live-frame {
+  width: min(100vw, calc(100dvh * 9 / 16));
+  height: min(100dvh, calc(100vw * 16 / 9));
+  aspect-ratio: 9 / 16;
+}
+
+.reward-board {
+  padding: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at 18% 0%, color-mix(in srgb, var(--board-glow) 45%, transparent), transparent 62%),
+    linear-gradient(180deg, rgba(12, 12, 12, 0.86), rgba(0, 0, 0, 0.62));
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+}
+
+.reward-board.superchat {
+  --board-glow: #f59e0b;
+}
+
+.reward-board.jewels {
+  --board-glow: #a855f7;
+}
+
+.reward-board-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.reward-board-title span {
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 9px;
+  font-weight: 950;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.reward-board-title strong {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--board-glow);
+  color: #050505;
+  font-size: 11px;
+  font-weight: 950;
+}
+
+.reward-tier {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 25px;
+  margin-top: 4px;
+  padding: 4px 7px;
+  border: 1px solid color-mix(in srgb, var(--tier-color) 45%, transparent);
+  border-radius: 9px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--tier-color) 20%, transparent), rgba(255, 255, 255, 0.04));
+}
+
+.reward-tier span {
+  color: var(--tier-color);
+  font-family: var(--font-display);
+  font-size: 12px;
+  line-height: 1;
+}
+
+.reward-tier strong {
+  color: rgba(255, 255, 255, 0.86);
+  font-size: 9px;
+  font-weight: 950;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.core-upgrade-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 112px;
+  padding: 14px;
+  border: 1px solid rgba(251, 191, 36, 0.34);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 12% 20%, rgba(251, 191, 36, 0.32), transparent 10rem),
+    linear-gradient(135deg, rgba(120, 53, 15, 0.76), rgba(20, 12, 4, 0.88));
+  box-shadow: 0 18px 52px rgba(0, 0, 0, 0.4), 0 0 42px rgba(251, 146, 60, 0.18);
+}
+
+.core-upgrade-icon {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 18px;
+  background: linear-gradient(135deg, #facc15, #f97316);
+  color: #1c0a00;
+  box-shadow: 0 14px 34px rgba(249, 115, 22, 0.34);
+}
+
 .site-nav {
   display: flex;
   align-items: center;
