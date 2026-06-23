@@ -222,7 +222,7 @@ export function GamePage() {
           </AnimatePresence>
 
           {/* STREAM REWARD TIERS */}
-          <div className="absolute right-3 top-3 bottom-3 w-[152px] z-20 grid content-start gap-2 pointer-events-none">
+          <div className="absolute right-3 top-3 bottom-3 w-[146px] z-20 grid content-start gap-2 pointer-events-none">
             <div className="reward-board superchat">
               <div className="reward-board-title">
                 <span>Super Chat</span>
@@ -263,23 +263,28 @@ export function GamePage() {
             </div>
           </div>
 
-          <div className="relative mr-[104px]">
+          <div className="cookie-stage relative mr-[120px]">
+            <div className="attention-particles" aria-hidden="true">
+              {Array.from({ length: 18 }).map((_, i) => (
+                <span key={i} style={{ '--i': i } as CSSProperties} />
+              ))}
+            </div>
             <motion.div
               whileHover={{ scale: 1.04 }}
               whileTap={{ scale: 0.93 }}
               onClick={handleCookieClick}
               data-testid="cookie-button"
-              className="cursor-pointer rounded-full relative z-20 select-none w-[190px] h-[190px] border-[6px] border-[#5a2f12] shadow-[inset_-18px_-22px_0_rgba(83,39,13,0.26),inset_16px_18px_0_rgba(255,218,146,0.16),0_0_42px_rgba(217,119,6,0.28)] bg-[radial-gradient(circle_at_34%_28%,#f4c16d_0%,#c5792c_42%,#8f4f1d_100%)]"
+              className="cookie-button cursor-pointer rounded-full relative z-20 select-none border-[8px] border-[#5a2f12] shadow-[inset_-30px_-34px_0_rgba(83,39,13,0.26),inset_22px_24px_0_rgba(255,218,146,0.18),0_0_68px_rgba(251,146,60,0.45),0_20px_70px_rgba(0,0,0,0.58)] bg-[radial-gradient(circle_at_34%_28%,#ffd382_0%,#d98931_42%,#8f4f1d_100%)]"
             >
               <div className="absolute inset-0 rounded-full pointer-events-none opacity-55 bg-[radial-gradient(circle_at_30%_26%,rgba(255,255,255,0.35),transparent_32%)]" />
               {!isBoss && (
                 <>
-                  <div className="absolute top-9 left-12 w-6 h-6 rounded-full bg-[#3b1f12] shadow-[inset_3px_3px_0_rgba(255,255,255,0.08)] pointer-events-none" />
-                  <div className="absolute top-[72px] right-11 w-8 h-8 rounded-full bg-[#2f180e] shadow-[inset_3px_3px_0_rgba(255,255,255,0.08)] pointer-events-none" />
-                  <div className="absolute bottom-12 left-[58px] w-7 h-7 rounded-full bg-[#351b10] shadow-[inset_3px_3px_0_rgba(255,255,255,0.08)] pointer-events-none" />
-                  <div className="absolute bottom-10 right-14 w-5 h-5 rounded-full bg-[#2f180e] shadow-[inset_3px_3px_0_rgba(255,255,255,0.08)] pointer-events-none" />
-                  <div className="absolute top-[98px] left-[88px] w-5 h-5 rounded-full bg-[#3b1f12] shadow-[inset_3px_3px_0_rgba(255,255,255,0.08)] pointer-events-none" />
-                  <div className="absolute top-14 left-[92px] w-4 h-4 rounded-full bg-[#2b160c] shadow-[inset_2px_2px_0_rgba(255,255,255,0.08)] pointer-events-none" />
+                  <div className="absolute top-[19%] left-[26%] w-[13%] h-[13%] rounded-full bg-[#3b1f12] shadow-[inset_4px_4px_0_rgba(255,255,255,0.08)] pointer-events-none" />
+                  <div className="absolute top-[38%] right-[22%] w-[16%] h-[16%] rounded-full bg-[#2f180e] shadow-[inset_4px_4px_0_rgba(255,255,255,0.08)] pointer-events-none" />
+                  <div className="absolute bottom-[22%] left-[30%] w-[15%] h-[15%] rounded-full bg-[#351b10] shadow-[inset_4px_4px_0_rgba(255,255,255,0.08)] pointer-events-none" />
+                  <div className="absolute bottom-[20%] right-[28%] w-[10%] h-[10%] rounded-full bg-[#2f180e] shadow-[inset_3px_3px_0_rgba(255,255,255,0.08)] pointer-events-none" />
+                  <div className="absolute top-[54%] left-[45%] w-[10%] h-[10%] rounded-full bg-[#3b1f12] shadow-[inset_3px_3px_0_rgba(255,255,255,0.08)] pointer-events-none" />
+                  <div className="absolute top-[29%] left-[50%] w-[8%] h-[8%] rounded-full bg-[#2b160c] shadow-[inset_2px_2px_0_rgba(255,255,255,0.08)] pointer-events-none" />
                 </>
               )}
             </motion.div>
@@ -526,7 +531,7 @@ export function GamePage() {
 
 
         {/* STREAM TEST PANEL */}
-        <div className="absolute bottom-0 left-0 w-full z-50">
+        <div className="shrink-0 w-full z-50">
           <div className="bg-card border-t border-border shadow-[0_-8px_30px_rgba(0,0,0,0.6)]">
 
             {/* LATEST EVENT TICKER */}
