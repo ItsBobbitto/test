@@ -155,31 +155,31 @@
   right: 0;
   bottom: 0;
   z-index: 1;
-  height: var(--milk-level, 0%);
+  height: clamp(72px, var(--milk-level, 0%), 50%);
   max-height: 50%;
-  min-height: 0;
+  min-height: 72px;
   pointer-events: none;
   background:
     radial-gradient(circle at 22% 22%, rgba(255,255,255,0.88), transparent 18%),
     radial-gradient(circle at 78% 18%, rgba(255,255,255,0.72), transparent 20%),
     linear-gradient(180deg, rgba(255,255,255,0.88), rgba(228,238,247,0.78));
   box-shadow: inset 0 18px 26px rgba(255,255,255,0.72), 0 -10px 35px rgba(255,255,255,0.16);
-  transition: height 450ms ease;
+  transition: height 450ms ease, background 220ms ease;
 }
 
 .page-milk-bg::after {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.22) 72%, rgba(0,0,0,0.54) 100%);
+  background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.08) 72%, rgba(0,0,0,0.22) 100%);
 }
 
 .page-milk-wave {
   position: absolute;
   left: -8%;
   right: -8%;
-  top: -28px;
-  height: 54px;
+  top: -34px;
+  height: 68px;
   background:
     radial-gradient(ellipse at 10% 100%, rgba(255,255,255,0.98) 0 36%, transparent 37%),
     radial-gradient(ellipse at 30% 100%, rgba(255,255,255,0.98) 0 34%, transparent 35%),
@@ -187,6 +187,7 @@
     radial-gradient(ellipse at 70% 100%, rgba(255,255,255,0.98) 0 34%, transparent 35%),
     radial-gradient(ellipse at 90% 100%, rgba(255,255,255,0.98) 0 36%, transparent 37%);
   animation: pageMilkWave 5.5s ease-in-out infinite;
+  filter: drop-shadow(0 -4px 10px rgba(255,255,255,0.2));
 }
 
 .chocolate-milk .page-milk-bg {
